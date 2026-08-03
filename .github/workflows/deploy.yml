@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     
     # Optional: Increase the timeout limit if you want to run exactly 6 hours
-    timeout-minutes: 360 
+    timeout-minutes: 280 
     
     steps:
       - name: 📥 Checkout Code
