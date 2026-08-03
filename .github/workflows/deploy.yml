@@ -1,0 +1,37 @@
+name: Deploy (Immortal Mode)
+
+# This allows you to manually trigger the workflow from the Actions tab
+on:
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    
+    # Optional: Increase the timeout limit if you want to run exactly 6 hours
+    timeout-minutes: 360 
+    
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v3
+
+      # 👻 THE GHOST TUNNEL: This is the massive intelligence trick.
+      # It intercepts all outbound traffic from the runner and routes it through Cloudflare.
+      - name: 🛡️ Setup Cloudflare WARP
+        uses: fscarmen/warp-on-actions@v1.2
+        with:
+          stack: dual # Enables both IPv4 and IPv6 routing
+
+      # 🔑 Authenticate to pull your Docker Image
+      - name: 🔐 Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }} # Or use a PAT if pulling a private image
+
+      # 🚀 Run the Bot using --network host to route through WARP
+      - name: 🤖 Boot N A Test
+        run: |
+          echo "Starting the bot inside the Cloudflare WARP Ghost Tunnel..."
+          docker run --rm --network host ${{ secrets.DOCKER_IMAGE_URL }}
