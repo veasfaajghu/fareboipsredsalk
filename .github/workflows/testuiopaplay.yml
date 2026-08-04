@@ -17,6 +17,16 @@ on:
           - playstore
           - unrooted
           - unrooted-playstore
+      proxy_url:
+        description: 'SOCKS5 Proxy (e.g. socks5://user:pass@ip:port) — Leave empty for no proxy'
+        required: false
+        default: ''
+        type: string
+      proxy_country:
+        description: 'Force proxy country code (e.g. US, GB, DE) — Auto-detected if empty'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   run-android-sandbox:
@@ -29,13 +39,24 @@ jobs:
           echo "Creating virtual network..."
           docker network create droid-net
           
-          echo "Booting Custom Headless Android Emulator with Spoofing..."
-          # REPLACE 'YOUR_MAIN_ACCOUNT_USERNAME' WITH THE USERNAME WHERE THE IMAGE WAS BUILT
-          # Optional: Route all traffic through a SOCKS5 proxy and spoof GPS to proxy IP
-          # Example: -e PROXY_URL="socks5://user:password@198.51.100.25:1080"
+          # Build the proxy environment flags
+          PROXY_FLAGS=""
+          if [ -n "${{ github.event.inputs.proxy_url }}" ]; then
+            PROXY_FLAGS="-e PROXY_URL=${{ github.event.inputs.proxy_url }}"
+            echo "🌐 PROXY: ${{ github.event.inputs.proxy_url }}"
+          fi
+          
+          COUNTRY_FLAGS=""
+          if [ -n "${{ github.event.inputs.proxy_country }}" ]; then
+            COUNTRY_FLAGS="-e PROXY_COUNTRY=${{ github.event.inputs.proxy_country }}"
+            echo "🌍 COUNTRY: ${{ github.event.inputs.proxy_country }}"
+          fi
+          
+          echo "Booting Custom Headless Android Emulator with Ghost Mode..."
           docker run -d --privileged --name android-core --network droid-net \
             -e ENABLE_GHOST_MODE=true \
-            -e PROXY_URL="" \
+            $PROXY_FLAGS \
+            $COUNTRY_FLAGS \
             ghcr.io/${{ github.event.inputs.ghcr_username }}/neon-spoofer:${{ github.event.inputs.image_tag }}
             
           echo "Booting Web Touch Streamer (scrcpy-web)..."
@@ -47,6 +68,14 @@ jobs:
             
           echo "Automating ADB Bridge connection..."
           docker exec -d web-streamer /bin/sh -c "while true; do adb connect android-core:5555; sleep 10; done"
+
+          # Wait for emulator to boot and show logs
+          echo "Waiting for emulator to boot (this takes 2-5 minutes)..."
+          sleep 30
+          echo ""
+          echo "======= EMULATOR BOOT LOGS ======="
+          docker logs android-core 2>&1 | tail -80
+          echo "=================================="
 
       - name: 🌐 Establish Cloudflare Tunnel
         run: |
@@ -68,7 +97,7 @@ jobs:
           echo "====================================================="
           
           if [ -n "${{ secrets.DISCORD_WEBHOOK_URL }}" ]; then
-            curl -s -H "Content-Type: application/json" -X POST -d "{\"content\": \"📱 Spoofed Android Sandbox Online!**\n🔗 Link: $CF_URL\n👻 **Mode: ${{ github.event.inputs.image_tag }}\"}" ${{ secrets.DISCORD_WEBHOOK_URL }}
+            curl -s -H "Content-Type: application/json" -X POST -d "{\"content\": \"📱 Spoofed Android Sandbox Online!**\n🔗 Link: $CF_URL\n👻 **Mode: ${{ github.event.inputs.image_tag }}\n🌐 Proxy: ${{ github.event.inputs.proxy_url || 'None' }}\"}" ${{ secrets.DISCORD_WEBHOOK_URL }}
           fi
           
           sleep 6h
