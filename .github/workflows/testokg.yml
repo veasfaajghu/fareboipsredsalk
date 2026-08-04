@@ -26,6 +26,10 @@ jobs:
             -e ADB_SERVER_PORT=5555 \
             -p 8000:8000 \
             emptysuns/scrcpy-web:v0.1
+            
+          echo "Automating ADB Bridge connection..."
+          # The Android OS takes a while to boot, so we loop the connect command
+          docker exec -d web-streamer /bin/sh -c "while true; do adb connect android-core:5555; sleep 10; done"
 
       - name: 🌐 Establish Cloudflare Tunnel
         run: |
