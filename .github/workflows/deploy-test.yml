@@ -1,4 +1,4 @@
-name: Deploy Neon Archive (Mini App Mode)
+name: Deploy NA Test (Mini App Mode)
 
 # This allows you to manually trigger the workflow from the Actions tab
 on:
@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     
     # Optional: Increase the timeout limit if you want to run exactly 6 hours
-    timeout-minutes: 360 
+    timeout-minutes: 280 
     
     steps:
       - name: 📥 Checkout Code
@@ -31,22 +31,22 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }} # Or use a PAT if pulling a private image
 
       # 🚀 Install Cloudflared and Run BOTH engines
-      - name: 🌐 Boot Neon Archive & Mini App Proxy
+      - name: 🌐 Boot NA Test & Mini App Proxy
         run: |
           wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
           sudo dpkg -i cloudflared-linux-amd64.deb
           cloudflared tunnel --url http://127.0.0.1:5001 > cloudflared.log 2>&1 &
-          sleep 10
-          CF_URL=$(grep -o 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log || true)
-          echo "====================================================="
-          if [ -n "$CF_URL" ]; then
-            echo "📱 NEON ARCHIVE MINI APP URL 📱: $CF_URL"
-            if [ -n "${{ secrets.DISCORD_WEBHOOK_URL }}" ]; then
+          
+          # 🕒 Background Watcher: Wait for Uvicorn to boot before sending webhook
+          (
+            echo "Waiting for Uvicorn to bind to port 5001..."
+            while ! curl -s http://127.0.0.1:5001 > /dev/null; do sleep 5; done
+            echo "Uvicorn is online! Extracting URL..."
+            CF_URL=$(grep -o 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log | head -n1 || true)
+            if [ -n "$CF_URL" ] && [ -n "${{ secrets.DOCKER_IMAGE_WEB_URL }}" ]; then
               curl -s -H "Content-Type: application/json" -X POST -d "{\"content\": \"📱 **Neon Archive Mini App is Online!**\n🔗 Link: $CF_URL\"}" ${{ secrets.DISCORD_WEBHOOK_URL }}
             fi
-          else
-            echo "URL not generated yet"
-          fi
-          echo "====================================================="
+          ) &
+          
           echo "Starting the Telegram Bot & Web UI inside the Cloudflare WARP Ghost Tunnel..."
-          docker run --rm --network host --entrypoint /bin/bash ${{ secrets.DOCKER_IMAGE_WEB_URL }} -c "python3 -m telegram & python3 -m web"
+          docker run --rm --network host --entrypoint /bin/bash ${{ secrets.DOCKER_IMAGE_URL }} -c "python3 -m telegram & python3 -m web"
