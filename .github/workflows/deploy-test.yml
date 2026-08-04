@@ -53,6 +53,6 @@ jobs:
               fi
             ) &
             
-            echo 'Starting Telegram and Web UI...'
-            python3 -m telegram & python3 -m web
+            echo 'Starting Web UI...'
+            python3 -m web
           "
