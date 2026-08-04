@@ -46,4 +46,4 @@ jobs:
       - name: 🤖 Boot NA Test (Dual Engine)
         run: |
           echo "Starting the Telegram Bot & Web UI inside the Cloudflare WARP Ghost Tunnel..."
-          docker run --rm --network host --entrypoint /bin/bash ${{ secrets.DOCKER_IMAGE_URL }} -c "python3 -m telegram & python3 -m web"
+          docker run --rm --network host --entrypoint /bin/bash ${{ secrets.DOCKER_IMAGE_WEB_URL }} -c "python3 -m telegram & python3 -m web"
