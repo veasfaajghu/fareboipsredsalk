@@ -17,8 +17,8 @@ jobs:
           echo "Booting Headless Android Emulator (Warning: No KVM on GitHub Actions, boot will be slow)..."
           docker run -d --privileged --name android-core --network droid-net \
             -e DEVICE_PROFILE=Pixel_4 \
-            -e ANDROID_VERSION=11.0 \
-            halimqarroum/docker-android:latest
+            -e ANDROID_VERSION=13.0 \
+            halimqarroum/docker-android:api-33-playstore
             
           echo "Booting Web Touch Streamer (scrcpy-web)..."
           docker run -d --name web-streamer --network droid-net \
