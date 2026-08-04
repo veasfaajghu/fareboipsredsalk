@@ -17,10 +17,10 @@ jobs:
 
       # 👻 THE GHOST TUNNEL: This is the massive intelligence trick.
       # It intercepts all outbound traffic from the runner and routes it through Cloudflare.
-      - name: 🛡️ Setup Cloudflare WARP
+      - name: 🛡️ Establish Cloudflare WARP Ghost Tunnel
         uses: fscarmen/warp-on-actions@v1.2
         with:
-          stack: dual # Enables both IPv4 and IPv6 routing
+          stack: ipv4 # Enables IPv4 routing only to prevent IPv6 drops
 
       # 🔑 Authenticate to pull your Docker Image
       - name: 🔐 Log in to GHCR
@@ -39,13 +39,15 @@ jobs:
             apt-get update -qq && apt-get install -qq -y curl > /dev/null 2>&1 &&
             curl -L -s https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o cloudflared.deb &&
             dpkg -i cloudflared.deb > /dev/null 2>&1 &&
-            cloudflared tunnel --url http://127.0.0.1:5001 > cloudflared.log 2>&1 &
+            cloudflared tunnel --protocol http2 --url http://127.0.0.1:5001 > cloudflared.log 2>&1 &
             
             (
-              echo 'Waiting for Uvicorn to boot on port 5001...'
-              while ! curl -s http://127.0.0.1:5001 > /dev/null; do sleep 5; done
-              echo 'Uvicorn is online! Extracting URL...'
-              CF_URL=\$(grep -o 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log | head -n1 || true)
+              echo 'Waiting for Uvicorn and Cloudflare Tunnel to boot...'
+              while ! curl -s http://127.0.0.1:5001 > /dev/null || ! grep -q 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log; do
+                sleep 5
+              done
+              echo 'Services are online! Extracting URL...'
+              CF_URL=\$(grep -o 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log | head -n1)
               if [ -n \"\$CF_URL\" ] && [ -n \"${{ secrets.DISCORD_WEBHOOK_URL }}\" ]; then
                 curl -s -H \"Content-Type: application/json\" -X POST -d \"{\\\"content\\\": \\\"📱 **Neon Archive Mini App is Online!**\n🔗 Link: \$CF_URL\\\"}\" ${{ secrets.DISCORD_WEBHOOK_URL }}
               fi
