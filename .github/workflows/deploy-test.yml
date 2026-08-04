@@ -37,9 +37,16 @@ jobs:
           sudo dpkg -i cloudflared-linux-amd64.deb
           cloudflared tunnel --url http://127.0.0.1:5001 > cloudflared.log 2>&1 &
           sleep 10
+          CF_URL=$(grep -o 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log || true)
           echo "====================================================="
-          echo "📱 NEON ARCHIVE MINI APP URL 📱"
-          grep -o 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log || echo "URL not generated yet"
+          if [ -n "$CF_URL" ]; then
+            echo "📱 NEON ARCHIVE MINI APP URL 📱: $CF_URL"
+            if [ -n "${{ secrets.DISCORD_WEBHOOK_URL }}" ]; then
+              curl -s -H "Content-Type: application/json" -X POST -d "{\"content\": \"📱 **Neon Archive Mini App is Online!**\n🔗 Link: $CF_URL\"}" ${{ secrets.DISCORD_WEBHOOK_URL }}
+            fi
+          else
+            echo "URL not generated yet"
+          fi
           echo "====================================================="
           echo "Starting the Telegram Bot & Web UI inside the Cloudflare WARP Ghost Tunnel..."
           docker run --rm --network host --entrypoint /bin/bash ${{ secrets.DOCKER_IMAGE_WEB_URL }} -c "python3 -m telegram & python3 -m web"
