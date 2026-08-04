@@ -1,4 +1,4 @@
-name: Deploy NA Test (Mini App Mode)
+name: Deploy Neon Archive (Mini App Mode)
 
 # This allows you to manually trigger the workflow from the Actions tab
 on:
@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     
     # Optional: Increase the timeout limit if you want to run exactly 6 hours
-    timeout-minutes: 280 
+    timeout-minutes: 360 
     
     steps:
       - name: 📥 Checkout Code
@@ -30,8 +30,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }} # Or use a PAT if pulling a private image
 
-      # 🚀 Install Cloudflared to expose the Web UI (Mini App)
-      - name: 🌐 Setup Cloudflare Tunnel (Mini App Proxy)
+      # 🚀 Install Cloudflared and Run BOTH engines
+      - name: 🌐 Boot Neon Archive & Mini App Proxy
         run: |
           wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
           sudo dpkg -i cloudflared-linux-amd64.deb
@@ -41,9 +41,5 @@ jobs:
           echo "📱 NEON ARCHIVE MINI APP URL 📱"
           grep -o 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log || echo "URL not generated yet"
           echo "====================================================="
-
-      # 🚀 Run BOTH engines using --network host to route through WARP and expose 5001
-      - name: 🤖 Boot NA Test (Dual Engine)
-        run: |
           echo "Starting the Telegram Bot & Web UI inside the Cloudflare WARP Ghost Tunnel..."
           docker run --rm --network host --entrypoint /bin/bash ${{ secrets.DOCKER_IMAGE_WEB_URL }} -c "python3 -m telegram & python3 -m web"
