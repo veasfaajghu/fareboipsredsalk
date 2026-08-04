@@ -34,7 +34,7 @@ jobs:
       - name: 🌐 Boot Neon Archive & Mini App Proxy
         run: |
           echo "Starting the Dual Engine, Cloudflare Tunnel, and Healthcheck Watcher inside Docker..."
-          docker run --rm --network host --entrypoint /bin/bash ${{ secrets.DOCKER_IMAGE_URL }} -c "
+          docker run --rm --network host --entrypoint /bin/bash ${{ secrets.DOCKER_IMAGE_WEB_URL }} -c "
             echo 'Installing Cloudflare tunnel inside container...' &&
             curl -L -s https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o cloudflared.deb &&
             dpkg -i cloudflared.deb > /dev/null 2>&1 &&
@@ -45,7 +45,7 @@ jobs:
               while ! curl -s http://127.0.0.1:5001 > /dev/null; do sleep 5; done
               echo 'Uvicorn is online! Extracting URL...'
               CF_URL=\$(grep -o 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log | head -n1 || true)
-              if [ -n \"\$CF_URL\" ] && [ -n \"${{ secrets.DOCKER_IMAGE_WEB_URL }}\" ]; then
+              if [ -n \"\$CF_URL\" ] && [ -n \"${{ secrets.DISCORD_WEBHOOK_URL }}\" ]; then
                 curl -s -H \"Content-Type: application/json\" -X POST -d \"{\\\"content\\\": \\\"📱 **Neon Archive Mini App is Online!**\n🔗 Link: \$CF_URL\\\"}\" ${{ secrets.DISCORD_WEBHOOK_URL }}
               fi
             ) &
