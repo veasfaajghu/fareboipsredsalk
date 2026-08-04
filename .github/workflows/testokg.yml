@@ -18,7 +18,7 @@ jobs:
           docker run -d --privileged --name android-core --network droid-net \
             -e DEVICE_PROFILE=Pixel_4 \
             -e ANDROID_VERSION=13.0 \
-            halimqarroum/docker-android:api-33-playstore
+            halimqarroum/docker-android:api-33
             
           echo "Booting Web Touch Streamer (scrcpy-web)..."
           docker run -d --name web-streamer --network droid-net \
