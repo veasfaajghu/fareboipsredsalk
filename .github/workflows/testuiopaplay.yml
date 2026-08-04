@@ -69,13 +69,26 @@ jobs:
           echo "Automating ADB Bridge connection..."
           docker exec -d web-streamer /bin/sh -c "while true; do adb connect android-core:5555; sleep 10; done"
 
-          # Wait for emulator to boot and show logs
-          echo "Waiting for emulator to boot (this takes 2-5 minutes)..."
-          sleep 30
+          # Wait for emulator boot + Ghost Mode patching cycle
+          # Timeline: Boot (~60s) → patch_system_build_props (~120s: root+remount+sed+reboot)
+          echo "⏳ Waiting for emulator boot (Phase 1: ~60 seconds)..."
+          sleep 60
           echo ""
-          echo "======= EMULATOR BOOT LOGS ======="
-          docker logs android-core 2>&1 | tail -80
-          echo "=================================="
+          echo "======= PHASE 1: BOOT LOGS ======="
+          docker logs android-core 2>&1 | tail -30
+          echo "==================================="
+          echo ""
+          echo "⏳ Waiting for Ghost Mode patching (Phase 2: ~4 minutes)..."
+          echo "   (adb root → adb remount → build.prop sed → reboot → verify)"
+          sleep 240
+          echo ""
+          echo "======= PHASE 2: GHOST MODE LOGS ======="
+          docker logs android-core 2>&1 | grep -A 100 "NUCLEAR\|GHOST MODE\|build.prop\|patch\|After reboot\|FAILED\|✅\|❌\|Boot completed" | tail -60
+          echo "========================================="
+          echo ""
+          echo "======= FULL EMULATOR LOGS (last 100 lines) ======="
+          docker logs android-core 2>&1 | tail -100
+          echo "===================================================="
 
       - name: 🌐 Establish Cloudflare Tunnel
         run: |
@@ -97,7 +110,8 @@ jobs:
           echo "====================================================="
           
           if [ -n "${{ secrets.DISCORD_WEBHOOK_URL }}" ]; then
-            curl -s -H "Content-Type: application/json" -X POST -d "{\"content\": \"📱 Spoofed Android Sandbox Online!**\n🔗 Link: $CF_URL\n👻 **Mode: ${{ github.event.inputs.image_tag }}\n🌐 Proxy: ${{ github.event.inputs.proxy_url || 'None' }}\"}" ${{ secrets.DISCORD_WEBHOOK_URL }}
+            curl -s -H "Content-Type: application/json" -X POST -d "{\"content\": \"📱 **Spoofed Android Sandbox Online!**\n🔗 Link: $CF_URL\n👻 **Mode:** ${{ github.event.inputs.image_tag }}\n🌐 **Proxy:** ${{ github.event.inputs.proxy_url || 'None' }}\"}" ${{ secrets.DISCORD_WEBHOOK_URL }}
           fi
           
           sleep 6h
+          
