@@ -36,7 +36,7 @@ jobs:
           # We override the entrypoint to run our Cloudflare setup first, then launch the Kiosk orchestrator
           docker run --rm --network host --privileged --shm-size=4gb --security-opt seccomp=unconfined --entrypoint /bin/bash ghcr.io/${{ github.event.inputs.ghcr_owner }}/aio-mr-gologin-kiosk:latest -c "
             echo 'Establishing Cloudflare tunnel...' &&
-            cloudflared tunnel --url http://localhost:6080 > /tmp/cloudflared.log 2>&1 &
+            cloudflared tunnel --url http://127.0.0.1:6080 > /tmp/cloudflared.log 2>&1 &
             echo 'Waiting for Cloudflare Ghost Tunnel to establish...' &&
             while ! grep -q 'https://.*trycloudflare.com' /tmp/cloudflared.log; do sleep 1; done &&
             TUNNEL_URL=\$(grep -o 'https://.*trycloudflare.com' /tmp/cloudflared.log | head -n 1) &&
