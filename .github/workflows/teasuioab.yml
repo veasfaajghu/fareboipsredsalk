@@ -35,28 +35,17 @@ jobs:
           
           # We override the entrypoint to run our Cloudflare setup first, then launch the Kiosk orchestrator
           docker run --rm --network host --privileged --shm-size=4gb --security-opt seccomp=unconfined --entrypoint /bin/bash ghcr.io/${{ github.event.inputs.ghcr_owner }}/aio-mr-gologin-kiosk:latest -c "
-            echo 'Installing Cloudflare tunnel inside container...' &&
-            apt-get update -qq && apt-get install -qq -y curl > /dev/null 2>&1 &&
-            curl -L -s https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o cloudflared.deb &&
-            dpkg -i cloudflared.deb > /dev/null 2>&1 &&
-            
-            # Start the tunnel pointing to the noVNC port (6080)
-            cloudflared tunnel --protocol http2 --url http://127.0.0.1:6080 > cloudflared.log 2>&1 &
-            
-            (
-              echo 'Waiting for Cloudflare Tunnel to boot...'
-              while ! grep -q 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log; do
-                sleep 5
-              done
-              echo 'Tunnel is online! Extracting URL...'
-              CF_URL=\$(grep -o 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log | head -n1)
-              
-              if [ -n \"\$CF_URL\" ] && [ -n \"${{ secrets.DISCORD_WEBHOOK_URL }}\" ]; then
-                # Notice we append /vnc.html so it instantly loads the visual interface!
-                curl -s -H \"Content-Type: application/json\" -X POST -d \"{\\\"content\\\": \\\"🌐 **GoLogin Web Kiosk is Online!**\n🔗 Click here to access your remote browser: \$CF_URL/vnc.html\\\"}\" ${{ secrets.DISCORD_WEBHOOK_URL }}
-              fi
-            ) &
-            
-            echo 'Starting the Kiosk Orchestrator...'
+            echo 'Establishing Cloudflare tunnel...' &&
+            cloudflared tunnel --url http://localhost:6080 > /tmp/cloudflared.log 2>&1 &
+            echo 'Waiting for Cloudflare Ghost Tunnel to establish...' &&
+            while ! grep -q 'https://.*trycloudflare.com' /tmp/cloudflared.log; do sleep 1; done &&
+            TUNNEL_URL=\$(grep -o 'https://.*trycloudflare.com' /tmp/cloudflared.log | head -n 1) &&
+            echo '===================================================' &&
+            echo '  [SUCCESS] GHOST TUNNEL ESTABLISHED!  ' &&
+            echo \"  🔗 URL: \$TUNNEL_URL\" &&
+            echo '===================================================' &&
+            if [ -n \"\$TUNNEL_URL\" ] && [ -n \"${{ secrets.DISCORD_WEBHOOK_URL }}\" ]; then
+              curl -s -H \"Content-Type: application/json\" -X POST -d \"{\\\"content\\\": \\\"🌐 **GoLogin Web Kiosk is Online!**\n🔗 Click here to access your remote browser: \$TUNNEL_URL/vnc.html\\\"}\" ${{ secrets.DISCORD_WEBHOOK_URL }}
+            fi &&
             /start.sh
           "
