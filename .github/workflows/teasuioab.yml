@@ -34,7 +34,7 @@ jobs:
           echo "Starting the GoLogin Kiosk, Ghost Monitor, and Cloudflare Tunnel inside Docker..."
           
           # We override the entrypoint to run our Cloudflare setup first, then launch the Kiosk orchestrator
-          docker run --rm --network host --entrypoint /bin/bash ghcr.io/${{ github.event.inputs.ghcr_owner }}/aio-mr-gologin-kiosk:latest -c "
+          docker run --rm --network host --shm-size=4gb --security-opt seccomp=unconfined --entrypoint /bin/bash ghcr.io/${{ github.event.inputs.ghcr_owner }}/aio-mr-gologin-kiosk:latest -c "
             echo 'Installing Cloudflare tunnel inside container...' &&
             apt-get update -qq && apt-get install -qq -y curl > /dev/null 2>&1 &&
             curl -L -s https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o cloudflared.deb &&
