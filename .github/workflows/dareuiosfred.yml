@@ -34,6 +34,8 @@ jobs:
           
           # Container 1: The UI Controller (Port 5001)
           docker run -d --rm --network host --privileged --name sys_core_1 \
+            -e VAULT_DB_PATH=/data/neon_dump_vault.sqlite \
+            -e USER_MATRIX_DB_PATH=/data/neon_users.sqlite \
             -v /tmp/neon-data:/data \
             -v /tmp/rclone_config:/config \
             -v /tmp/neon-images:/usr/src/app/web/static/media_images \
@@ -59,6 +61,8 @@ jobs:
 
           # Container 2: The Network Proxy (Port 5000)
           docker run --rm --network host --privileged --name sys_core_2 \
+            -e VAULT_DB_PATH=/data/neon_dump_vault.sqlite \
+            -e USER_MATRIX_DB_PATH=/data/neon_users.sqlite \
             -v /tmp/neon-data:/data \
             -v /tmp/rclone_config:/config \
             -v /tmp/neon-images:/usr/src/app/web/static/media_images \
@@ -82,4 +86,3 @@ jobs:
             
             python3 -m telegram
           "
-          
