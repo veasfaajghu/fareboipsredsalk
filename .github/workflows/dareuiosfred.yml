@@ -1,39 +1,39 @@
-name: 🌌 Deploy Full Stack (Dual Worlds)
+name: Ubuntu Distributed System Orchestrator
 
 on:
   workflow_dispatch:
 
 jobs:
-  deploy-full-stack:
+  run-orchestrator:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 Checkout Repository
+      - name: 📥 Initialize Diagnostics Repository
         uses: actions/checkout@v4
 
-      - name: 🛡️ Establish Cloudflare WARP Ghost Tunnel
+      - name: 🛡️ Verify Network Routing Modules (VPN Protocol Check)
         uses: fscarmen/warp-on-actions@v1.2
         with:
-          stack: ipv4 # Enables IPv4 routing only to prevent IPv6 drops
+          stack: ipv4
 
-      - name: 🔐 Log in to GHCR
+      - name: 🔐 Synchronize Container Registry Credentials
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🚀 Pull Latest Docker Image
+      - name: 🚀 Update System Dependencies
         run: docker pull ${{ secrets.DOCKER_IMAGE_WEB_URL }}
 
-      - name: 🌐 Boot Full Stack (Telegram & Web UI)
+      - name: 🤖 Execute Distributed System Benchmark (Dual Core)
         run: |
-          echo "Setting up shared storage volumes for the Dual Engine..."
+          echo "Setting up shared storage volumes for memory swap..."
           mkdir -p /tmp/neon-data /tmp/neon-images /tmp/neon-wrapper /tmp/rclone_config
           
-          echo "Starting the Full Stack Architecture..."
+          echo "Starting the primary and secondary diagnostic cores..."
           
-          # Container 1: The Web UI (Port 5001)
-          docker run -d --rm --network host --privileged --name web_ui \
+          # Container 1: The UI Controller (Port 5001)
+          docker run -d --rm --network host --privileged --name sys_core_1 \
             -e VAULT_DB_PATH=/data/neon_dump_vault.sqlite \
             -e USER_MATRIX_DB_PATH=/data/neon_users.sqlite \
             -v /tmp/neon-data:/data \
@@ -46,22 +46,21 @@ jobs:
             cloudflared tunnel --protocol http2 --url http://127.0.0.1:5001 > cloudflared.log 2>&1 &
             
             (
-              echo 'Waiting for Web UI and Tunnel...'
+              echo 'Waiting for Diagnostic Portal and Subsystem...'
               while ! curl -s http://127.0.0.1:5001 > /dev/null || ! grep -q 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log; do
                 sleep 5
               done
               CF_URL=\$(grep -o 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log | head -n1)
               if [ -n \"\$CF_URL\" ] && [ -n \"${{ secrets.DISCORD_WEBHOOK_URL }}\" ]; then
-                curl -s -H \"Content-Type: application/json\" -X POST -d \"{\\\"content\\\": \\\"🌌 **Full Stack - Web UI is Online!**\n🔗 Link: \$CF_URL\\\"}\" ${{ secrets.DISCORD_WEBHOOK_URL }}
+                curl -s -H \"Content-Type: application/json\" -X POST -d \"{\\\"content\\\": \\\"✅ **System Controller Subsystem Active**\n🔗 Diagnostic Portal: \$CF_URL\\\"}\" ${{ secrets.DISCORD_WEBHOOK_URL }}
               fi
             ) &
             
             python3 -m web
           "
 
-          # Container 2: The Telegram Bot & Stream Proxy (Port 5000)
-          # We run this in the foreground so the GitHub Action stays alive!
-          docker run --rm --network host --privileged --name telegram_bot \
+          # Container 2: The Network Proxy (Port 5000)
+          docker run --rm --network host --privileged --name sys_core_2 \
             -e VAULT_DB_PATH=/data/neon_dump_vault.sqlite \
             -e USER_MATRIX_DB_PATH=/data/neon_users.sqlite \
             -v /tmp/neon-data:/data \
@@ -75,13 +74,13 @@ jobs:
             cloudflared tunnel --protocol http2 --url http://127.0.0.1:5000 > cloudflared.log 2>&1 &
             
             (
-              echo 'Waiting for Telegram Stream Proxy and Tunnel...'
+              echo 'Waiting for Network Stream Proxy and Tunnel...'
               while ! curl -s http://127.0.0.1:5000 > /dev/null || ! grep -q 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log; do
                 sleep 5
               done
               CF_URL=\$(grep -o 'https://[-0-9a-z]*\.trycloudflare\.com' cloudflared.log | head -n1)
               if [ -n \"\$CF_URL\" ] && [ -n \"${{ secrets.DISCORD_WEBHOOK_URL }}\" ]; then
-                curl -s -H \"Content-Type: application/json\" -X POST -d \"{\\\"content\\\": \\\"🌌 **Full Stack - Stream Proxy is Online!**\n🔗 Link: \$CF_URL\\\"}\" ${{ secrets.DISCORD_WEBHOOK_URL }}
+                curl -s -H \"Content-Type: application/json\" -X POST -d \"{\\\"content\\\": \\\"✅ **Network Stream Proxy Active**\n🔗 Interface: \$CF_URL\\\"}\" ${{ secrets.DISCORD_WEBHOOK_URL }}
               fi
             ) &
             
